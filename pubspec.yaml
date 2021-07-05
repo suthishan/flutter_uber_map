@@ -35,8 +35,8 @@ dependencies:
   provider:
   location:
   http:
-  permission_handler:
-  dio:
+  # dio:
+  # google_map_polyline:
 
 dev_dependencies:
   flutter_test:

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:dio/dio.dart';
+// import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_uber_map/DataHandler/appData.dart';
@@ -49,12 +49,12 @@ class _UberMapViewState extends State<UberMapView> {
   final desrinationAddressFocusNode = FocusNode();
   static const String _baseUrl =
       'https://maps.googleapis.com/maps/api/directions/json?';
-  late final Dio _dio;
+  // late final Dio _dio;
 
   String _startAddress = '';
   String _destinationAddress = '';
   String? _placeDistance;
-  late Directions _info;
+  // late Directions _info;
 
   Set<Marker> markers = {};
 
@@ -191,12 +191,20 @@ class _UberMapViewState extends State<UberMapView> {
   }
 
   Future<DirecttionDetails> getRouteCoordinates(LatLng l1, LatLng l2) async {
+    var pickUpLaLng = l1;
+    var dropOffLapLng = l2;
+    print(pickUpLaLng);
+    print(dropOffLapLng);
+    //  var details = await AssistantMethods.obtainDirectionDetails(
+    //     pickUpLaLng, dropOffLapLng);
     String url =
-        "https://maps.googleapis.com/maps/api/directions/json?origin=${l1.latitude},${l1.longitude}&destination=${l2.latitude},${l2.longitude}&key=AIzaSyBlEEDsJoLqcZDnnQXc2gxj5WUjs-K9qFA";
-    http.Response response = await http.get(Uri.parse(url));
-    Map values = jsonDecode(response.body);
+        "https://maps.googleapis.com/maps/api/directions/json?origin=${l1.latitude},${l1.longitude}&destination=${l2.latitude},${l2.longitude}&key=AIzaSyCnzEjpN8svPol7UhuEf-3XBQt4kC-dkOA";
+    print(url);
+    var details = await http.get(Uri.parse(url));
+    // print(response.body);
+    Map values = jsonDecode(details.body);
     // ProjectLog.logIt("TAG", "Predictions", values.toString());
-    print(values);
+    print(values["routes"][0]["overview_polyline"]["points"]);
     DirecttionDetails directtionDetails = DirecttionDetails();
 
     directtionDetails.encodedPoints =
@@ -207,12 +215,24 @@ class _UberMapViewState extends State<UberMapView> {
     directtionDetails.distanceValue =
         values["routes"][0]["legs"][0]["distance"]["value"];
 
-    directtionDetails.durationText =
-        values["routes"][0]["legs"][0]["duration"]["value"];
-    directtionDetails.durationValue =
-        values["routes"][0]["legs"][0]["duration"]["value"];
+    // directtionDetails.durationText =
+    //     values["routes"][0]["legs"][0]["duration"]["text"];
+    // directtionDetails.durationValue =
+    //     values["routes"][0]["legs"][0]["duration"]["text"];
+
+    PolylinePoints polylinePoints = PolylinePoints();
+    List<PointLatLng> decodedPointsResult =
+        polylinePoints.decodePolyline(details.toString());
+
+    pLineCoordinates.clear();
+    if (decodedPointsResult.isNotEmpty) {
+      decodedPointsResult.forEach((PointLatLng pointLatLng) {
+        pLineCoordinates.add(LatLng(l1.latitude, l2.longitude));
+      });
+    }
 
     return directtionDetails;
+
     // return values["routes"][0]["overview_polyline"]["points"];
   }
 
@@ -223,13 +243,13 @@ class _UberMapViewState extends State<UberMapView> {
     double destinationLatitude,
     double destinationLongitude,
   ) async {
-    print(startLatitude);
-    print(startLongitude);
-    print(destinationLatitude);
-    print(destinationLongitude);
+    // print(startLatitude);
+    // print(startLongitude);
+    // print(destinationLatitude);
+    // print(destinationLongitude);
     polylinePoints = PolylinePoints();
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-        "AIzaSyBlEEDsJoLqcZDnnQXc2gxj5WUjs-K9qFA", // Google Maps API Key
+        "AIzaSyCnzEjpN8svPol7UhuEf-3XBQt4kC-dkOA", // Google Maps API Key
         PointLatLng(startLatitude, startLongitude),
         PointLatLng(destinationLatitude, destinationLongitude),
         travelMode: TravelMode.driving,
@@ -246,15 +266,19 @@ class _UberMapViewState extends State<UberMapView> {
 
     PolylineId id = PolylineId('poly');
     Polyline polyline = Polyline(
-      polylineId: id,
-      color: Colors.red,
-      points: polylineCoordinates,
-      width: 3,
-    );
+        polylineId: id,
+        color: Colors.red,
+        points: [
+          LatLng(12.988827, 77.472091),
+          LatLng(12.980821, 77.470815),
+          LatLng(12.969406, 77.471301)
+        ],
+        width: 3,
+        patterns: [PatternItem.dot, PatternItem.gap(10)]);
     polylines[id] = polyline;
 
-    var LOCATION_A = PointLatLng(startLatitude, startLongitude);
-    var LOCATION_B = PointLatLng(destinationLatitude, destinationLongitude);
+    // var LOCATION_A = PointLatLng(startLatitude, startLongitude);
+    // var LOCATION_B = PointLatLng(destinationLatitude, destinationLongitude);
 
     // _polyLine.add(Polyline(
     //   polylineId: PolylineId("route1"),
@@ -273,9 +297,11 @@ class _UberMapViewState extends State<UberMapView> {
     try {
       // Retrieving placemarks from addresses
       List<Location> startPlacemark = await locationFromAddress(_startAddress);
+      print("startPlacemark");
       print(startPlacemark);
       List<Location> destinationPlacemark =
           await locationFromAddress(_destinationAddress);
+      print("destinationPlacemark");
       print(destinationPlacemark);
 
       // Use the retrieved coordinates of the current position,
@@ -290,12 +316,12 @@ class _UberMapViewState extends State<UberMapView> {
       double startLongitude = _startAddress == _currentAddress
           ? currentPos.longitude
           : startPlacemark[0].longitude;
-      print(startLongitude);
+      // print(startLongitude);
 
       double destinationLatitude = destinationPlacemark[0].latitude;
-      print(destinationLatitude);
+      // print(destinationLatitude);
       double destinationLongitude = destinationPlacemark[0].longitude;
-      print(destinationLongitude);
+      // print(destinationLongitude);
 
       String startCoordinatesString = '($startLatitude, $startLongitude)';
       String destinationCoordinatesString =
@@ -326,6 +352,9 @@ class _UberMapViewState extends State<UberMapView> {
       // Adding the markers to the list
       markers.add(startMarker);
       markers.add(destinationMarker);
+      getRouteCoordinates(LatLng(destinationLatitude, destinationLongitude),
+          LatLng(startLatitude, startLongitude));
+      // getPlaceDirection();
 
       print(
         'START COORDINATES: ($startLatitude, $startLongitude)',
@@ -384,10 +413,10 @@ class _UberMapViewState extends State<UberMapView> {
       );
       print(distanceInMeters);
 
-      final directions = await getDirections(
-          origin: startMarker.position,
-          destination: destinationMarker.position);
-      setState(() => _info = directions);
+      // final directions = await getDirections(
+      //     origin: startMarker.position,
+      //     destination: destinationMarker.position);
+      // setState(() => _info = directions);
 
       await _createPolylines(startLatitude, startLongitude, destinationLatitude,
           destinationLongitude);
@@ -508,19 +537,20 @@ class _UberMapViewState extends State<UberMapView> {
               myLocationEnabled: true,
               zoomGesturesEnabled: true,
               zoomControlsEnabled: true,
-              polylines: {
-                // ignore: unnecessary_null_comparison
-                if (_info != null)
-                  Polyline(
-                    polylineId: const PolylineId('overview_polyline'),
-                    color: Colors.red,
-                    width: 5,
-                    points: _info.polylinePoints
-                        .map((e) => LatLng(e.latitude, e.longitude))
-                        .toList(),
-                  ),
-              },
-              // Set<Polyline>.of(polylines.values),
+              polylines:
+                  // {
+                  //   // ignore: unnecessary_null_comparison
+                  //   if (_info != null)
+                  //     Polyline(
+                  //       polylineId: const PolylineId('overview_polyline'),
+                  //       color: Colors.red,
+                  //       width: 5,
+                  //       points: _info.polylinePoints
+                  //           .map((e) => LatLng(e.latitude, e.longitude))
+                  //           .toList(),
+                  //     ),
+                  // },
+                  Set<Polyline>.of(polylines.values),
               onMapCreated: (GoogleMapController controller) {
                 mapController = controller;
               },
@@ -707,23 +737,58 @@ class _UberMapViewState extends State<UberMapView> {
     );
   }
 
-  Future<Directions> getDirections({
-    required LatLng origin,
-    required LatLng destination,
-  }) async {
-    final response = await _dio.get(
-      _baseUrl,
-      queryParameters: {
-        'origin': '${origin.latitude},${origin.longitude}',
-        'destination': '${destination.latitude},${destination.longitude}',
-        'key': "AIzaSyBlEEDsJoLqcZDnnQXc2gxj5WUjs-K9qFA",
-      },
-    );
+  static Future<DirecttionDetails> obtainDirectionDetails(
+      LatLng initialPosition, LatLng finalPosition) async {
+    String directionUrl =
+        "https://maps.googleapis.com/maps/api/directions/json?origin=${initialPosition.latitude},${initialPosition.longitude}&destination=${finalPosition.latitude},${finalPosition.longitude}&key=AIzaSyCnzEjpN8svPol7UhuEf-3XBQt4kC-dkOA";
+    // String directionUrl="https://maps.googleapis.com/maps/api/directions/json?origin=Toronto&destination=Montreal&key=$mapKey";
+    // String url =
+    //     "https://maps.googleapis.com/maps/api/directions/json?origin=${l1.latitude},${l1.longitude}&destination=${l2.latitude},${l2.longitude}&key=AIzaSyCnzEjpN8svPol7UhuEf-3XBQt4kC-dkOA";
+    print(directionUrl);
+    var details = await http.get(Uri.parse(directionUrl));
+    Map values = jsonDecode(details.body);
 
-    // Check if response is successful
-    if (response.statusCode == 200) {
-      return Directions.fromMap(response.data);
-    }
-    return _info;
+    // var res = await RequestAssistant.getRequest(directionUrl);
+
+    // if (res == "failed") {
+    //   return null;
+    // }
+
+    DirecttionDetails directtionDetails = DirecttionDetails();
+
+    directtionDetails.encodedPoints =
+        values["routes"][0]["overview_polyline"]["points"];
+
+    directtionDetails.distanceText =
+        values["routes"][0]["legs"][0]["distance"]["text"];
+    directtionDetails.distanceValue =
+        values["routes"][0]["legs"][0]["distance"]["value"];
+
+    directtionDetails.durationText =
+        values["routes"][0]["legs"][0]["duration"]["value"];
+    directtionDetails.durationValue =
+        values["routes"][0]["legs"][0]["duration"]["value"];
+
+    return directtionDetails;
   }
+
+  // Future<Directions> getDirections({
+  //   required LatLng origin,
+  //   required LatLng destination,
+  // }) async {
+  //   final response = await _dio.get(
+  //     _baseUrl,
+  //     queryParameters: {
+  //       'origin': '${origin.latitude},${origin.longitude}',
+  //       'destination': '${destination.latitude},${destination.longitude}',
+  //       'key': "AIzaSyBlEEDsJoLqcZDnnQXc2gxj5WUjs-K9qFA",
+  //     },
+  //   );
+
+  //   // Check if response is successful
+  //   if (response.statusCode == 200) {
+  //     return Directions.fromMap(response.data);
+  //   }
+  //   return _info;
+  // }
 }
